@@ -2,10 +2,8 @@ name: Update training plan page
 
 on:
   schedule:
-    # Sunday 10pm America/New_York = 02:00 UTC Monday (EDT, UTC-4)
+    # ~Sunday 10pm America/New_York; drifts by an hour across DST
     - cron: "0 2 * * 1"
-    # Sunday 10pm America/New_York = 03:00 UTC Monday (EST, UTC-5)
-    - cron: "0 3 * * 1"
   push:
     branches: [main]
     paths:
@@ -19,32 +17,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Check it's actually Sunday 10pm America/New_York
-        if: github.event_name == 'schedule'
-        run: |
-          now=$(TZ="America/New_York" date +"%u %H")
-          day=$(echo "$now" | cut -d' ' -f1)
-          hour=$(echo "$now" | cut -d' ' -f2)
-          # ISO weekday: Sunday = 7
-          if [ "$day" != "7" ] || [ "$hour" != "22" ]; then
-            echo "Not Sunday 10pm America/New_York (got day=$day hour=$hour) — skipping."
-            echo "SKIP=true" >> "$GITHUB_ENV"
-          fi
-
       - uses: actions/checkout@v4
-        if: env.SKIP != 'true'
 
       - uses: actions/setup-python@v5
-        if: env.SKIP != 'true'
         with:
           python-version: "3.x"
 
       - name: Build site
-        if: env.SKIP != 'true'
         run: python build.py
 
       - name: Commit and push if changed
-        if: env.SKIP != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
